@@ -17,8 +17,9 @@ const DefaultIcon = L.icon({
   iconAnchor: [12, 41],
 });
 L.Marker.prototype.options.icon = DefaultIcon;
-
+// --- BASE DE DATOS DE BARRIOS CORREDOR (COORDENADAS EXACTAS AJUSTADAS) ---
 const BARRIOS_CORREDOR = {
+  // --- ZONA HUDSON & EL PATO ---
   "Fincas de Hudson": { lat: -34.8021, lng: -58.1582, zona: "Hudson" },
   "Fincas del Sur": { lat: -34.8115, lng: -58.1634, zona: "Hudson" },
   "Abril Club de Campo": { lat: -34.8234, lng: -58.1712, zona: "Hudson" },
@@ -26,22 +27,27 @@ const BARRIOS_CORREDOR = {
   "Barrio Los Profesionales": { lat: -34.8156, lng: -58.1498, zona: "Hudson" },
   "El Pato Country Club": { lat: -34.8621, lng: -58.1890, zona: "El Pato" },
   "Las Acacias (El Pato)": { lat: -34.8712, lng: -58.1950, zona: "El Pato" },
-  "La Cándida Club de Campo": { lat: -34.9351, lng: -58.1212, zona: "Ruta 2 Km 47" },
-  "Haras del Sur I": { lat: -35.0112, lng: -58.0051, zona: "Ruta 2 Km 69" },
-  "Haras del Sur II": { lat: -35.0189, lng: -58.0123, zona: "Ruta 2 Km 71" },
-  "Haras del Sur III": { lat: -35.0280, lng: -58.0210, zona: "Ruta 2 Km 73" },
-  "Haras del Sur IV / Combo": { lat: -35.0340, lng: -58.0290, zona: "Ruta 2 Km 75" },
-  "Miralagos Club de Campo": { lat: -35.0255, lng: -58.0421, zona: "Ruta 2 Km 65" },
-  "Campos de Roca I": { lat: -35.0511, lng: -58.0812, zona: "Ruta 2 Km 65" },
-  "Campos de Roca II": { lat: -35.0601, lng: -58.0921, zona: "Ruta 2 Km 65" },
-  "Posada del Sol": { lat: -35.0712, lng: -58.0122, zona: "Ruta 2" },
-  "Area 60 (La Victoria / Real)": { lat: -35.0890, lng: -57.9850, zona: "Ruta 2 Km 64" },
-  "Altos de Brandsen": { lat: -35.1521, lng: -58.2140, zona: "Brandsen" },
+
+  // --- ZONA AUTOVÍA RUTA 2 (KM 64 AL 75) ---
+  "La Cándida Club de Campo": { lat: -35.0350, lng: -58.1020, zona: "Ruta 2 Km 47" },
+  "Area 60 (La Victoria / Real)": { lat: -35.0921, lng: -58.0750, zona: "Ruta 2 Km 64" },
+  "Miralagos Club de Campo": { lat: -35.0980, lng: -58.0680, zona: "Ruta 2 Km 65" },
+  "Campos de Roca I": { lat: -35.1010, lng: -58.0630, zona: "Ruta 2 Km 65" },
+  "Campos de Roca II": { lat: -35.1050, lng: -58.0580, zona: "Ruta 2 Km 65" },
+  "Haras del Sur I": { lat: -35.1235, lng: -58.0380, zona: "Ruta 2 Km 69" },
+  "Haras del Sur II": { lat: -35.1360, lng: -58.0220, zona: "Ruta 2 Km 71" },
+  "Haras del Sur III": { lat: -35.1480, lng: -58.0080, zona: "Ruta 2 Km 73" },
+  "Haras del Sur IV / Combo": { lat: -35.1600, lng: -57.9920, zona: "Ruta 2 Km 75" },
+  "Posada del Sol": { lat: -35.1120, lng: -58.0510, zona: "Ruta 2" },
+
+  // --- ZONA BRANDSEN ---
+  "Altos de Brandsen": { lat: -35.1620, lng: -58.2210, zona: "Brandsen" },
   "Las Mandarinas": { lat: -35.1712, lng: -58.2280, zona: "Brandsen" },
   "Barrio Obligado": { lat: -35.1650, lng: -58.2410, zona: "Brandsen" },
   "Campos de Brandsen": { lat: -35.1820, lng: -58.2530, zona: "Brandsen" },
   "El Sostén (Brandsen)": { lat: -35.1410, lng: -58.1980, zona: "Brandsen" },
 };
+
 
 function RecentarMapa({ bounds }) {
   const map = useMap();
