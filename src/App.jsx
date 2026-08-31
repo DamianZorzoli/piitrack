@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { QRCodeSVG } from "qrcode.react";
+import { Html5QrcodeScanner } from "html5-qrcode";
 
 import markerIconPng from "leaflet/dist/images/marker-icon.png";
 import markerShadowPng from "leaflet/dist/images/marker-shadow.png";
@@ -14,21 +16,16 @@ const DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// --- BASE DE DATOS DE BARRIOS: CORREDOR HUDSON, RUTA 2 Y BRANDSEN ---
+// --- BASE DE DATOS DE BARRIOS CORREDOR HUDSON / RUTA 2 / BRANDSEN ---
 const BARRIOS_CORREDOR = {
-  // ZONA HUDSON / BERAZATEGUI
   "Fincas de Hudson": { lat: -34.8021, lng: -58.1582, zona: "Hudson" },
   "Fincas del Sur": { lat: -34.8115, lng: -58.1634, zona: "Hudson" },
   "Abril Club de Campo": { lat: -34.8234, lng: -58.1712, zona: "Hudson" },
   "El Carmen Country Club": { lat: -34.8312, lng: -58.1821, zona: "Hudson" },
   "Barrio Los Profesionales": { lat: -34.8156, lng: -58.1498, zona: "Hudson" },
-
-  // ZONA EL PATO / EL PELIGRO (RUTA 2 KM 35 A 50)
   "El Pato Country Club": { lat: -34.8621, lng: -58.1890, zona: "El Pato" },
   "Las Acacias (El Pato)": { lat: -34.8712, lng: -58.1950, zona: "El Pato" },
   "La Cándida Club de Campo": { lat: -34.9351, lng: -58.1212, zona: "Ruta 2 Km 47" },
-
-  // ZONA CORREDOR RUTA 2 (KM 60 A 90)
   "Haras del Sur I": { lat: -35.0112, lng: -58.0051, zona: "Ruta 2 Km 69" },
   "Haras del Sur II": { lat: -35.0189, lng: -58.0123, zona: "Ruta 2 Km 71" },
   "Haras del Sur III": { lat: -35.0280, lng: -58.0210, zona: "Ruta 2 Km 73" },
@@ -38,8 +35,6 @@ const BARRIOS_CORREDOR = {
   "Campos de Roca II": { lat: -35.0601, lng: -58.0921, zona: "Ruta 2 Km 65" },
   "Posada del Sol": { lat: -35.0712, lng: -58.0122, zona: "Ruta 2" },
   "Area 60 (La Victoria / Real)": { lat: -35.0890, lng: -57.9850, zona: "Ruta 2 Km 64" },
-
-  // ZONA BRANDSEN Y ACCESOS (RUTA 215 / RUTA 6)
   "Altos de Brandsen": { lat: -35.1521, lng: -58.2140, zona: "Brandsen" },
   "Las Mandarinas": { lat: -35.1712, lng: -58.2280, zona: "Brandsen" },
   "Barrio Obligado": { lat: -35.1650, lng: -58.2410, zona: "Brandsen" },
@@ -51,6 +46,38 @@ function RecentarMapa({ bounds }) {
   const map = useMap();
   if (bounds && bounds.length > 0) map.fitBounds(bounds, { padding: [50, 50] });
   return null;
+}
+
+// --- COMPONENTE ESCÁNER DE QR ---
+function EscanerQR({ onScanSuccess, onCancel }) {
+  useEffect(() => {
+    const scanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 250 }, false);
+    scanner.render(
+      (decodedText) => {
+        try {
+          const data = JSON.parse(decodedText);
+          scanner.clear();
+          onScanSuccess(data);
+        } catch (e) {
+          alert("El código QR no pertenece al sistema PiiTrack.");
+        }
+      },
+      () => {}
+    );
+    return () => {
+      scanner.clear().catch(() => {});
+    };
+  }, [onScanSuccess]);
+
+  return (
+    <div style={{ backgroundColor: "#fff", padding: "15px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+      <h4>Escanear Código del Paquete</h4>
+      <div id="qr-reader" style={{ width: "100%" }}></div>
+      <button onClick={onCancel} style={{ ...styles.logoutBtn, marginTop: "10px", width: "100%" }}>
+        Cancelar
+      </button>
+    </div>
+  );
 }
 
 export default function AppPiiTrack() {
@@ -72,20 +99,8 @@ export default function AppPiiTrack() {
       comisionApp: 2288,
       estado: "PENDIENTE",
       conductor: null,
+      coordsChofer: null,
     },
-    {
-      id: "PII-902",
-      emisor: "contacto@miralagos.com",
-      origen: "Miralagos Club de Campo",
-      destino: "Altos de Brandsen",
-      paquete: "Caja de indumentaria",
-      distancia: "22.1",
-      montoTotal: 9235,
-      gananciaConductor: 7388,
-      comisionApp: 1847,
-      estado: "ENTREGADO",
-      conductor: "chofer@piitrack.com",
-    }
   ]);
 
   const handleLogin = (e) => {
@@ -100,7 +115,6 @@ export default function AppPiiTrack() {
     setPassInput("");
   };
 
-  // --- LOGIN CON BRANDING PIITRACK ---
   if (!usuario) {
     return (
       <div style={styles.loginContainer}>
@@ -110,7 +124,7 @@ export default function AppPiiTrack() {
             <h1 style={styles.logoTitle}>Pii track</h1>
           </div>
           <p style={styles.logoSubtitle}>Logística colaborativa · Corredor Ruta 2 / Hudson / Brandsen</p>
-          
+
           <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             <div>
               <label style={styles.label}>Correo Electrónico</label>
@@ -142,7 +156,9 @@ export default function AppPiiTrack() {
                 <option value="admin">Administrador PiiTrack</option>
               </select>
             </div>
-            <button type="submit" style={styles.primaryButton}>Ingresar a PiiTrack</button>
+            <button type="submit" style={styles.primaryButton}>
+              Ingresar a PiiTrack
+            </button>
           </form>
         </div>
       </div>
@@ -162,7 +178,9 @@ export default function AppPiiTrack() {
           <span style={styles.userBadge}>
             <b>{usuario.email}</b> ({usuario.role.toUpperCase()})
           </span>
-          <button onClick={handleLogout} style={styles.logoutBtn}>Salir</button>
+          <button onClick={handleLogout} style={styles.logoutBtn}>
+            Salir
+          </button>
         </div>
       </header>
 
@@ -175,7 +193,7 @@ export default function AppPiiTrack() {
   );
 }
 
-// --- PANEL EMISOR ---
+// --- PANEL EMISOR CON QR Y MAPA DE TRACKING EN VIVO ---
 function PanelEmisor({ usuario, envios, setEnvios }) {
   const [origenKey, setOrigenKey] = useState("Fincas de Hudson");
   const [destinoKey, setDestinoKey] = useState("Haras del Sur I");
@@ -190,7 +208,6 @@ function PanelEmisor({ usuario, envios, setEnvios }) {
     const orig = BARRIOS_CORREDOR[origenKey];
     const dest = BARRIOS_CORREDOR[destinoKey];
 
-    // Consulta exacta al servidor OSRM por carreteras reales de Argentina
     const url = `https://router.project-osrm.org/route/v1/driving/${orig.lng},${orig.lat};${dest.lng},${dest.lat}?overview=full&geometries=geojson`;
 
     try {
@@ -199,7 +216,7 @@ function PanelEmisor({ usuario, envios, setEnvios }) {
       if (data.routes && data.routes.length > 0) {
         const route = data.routes[0];
         const km = (route.distance / 1000).toFixed(1);
-        setRutaCoords(route.geometry.coordinates.map(c => [c[1], c[0]]));
+        setRutaCoords(route.geometry.coordinates.map((c) => [c[1], c[0]]));
         setDistanciaKm(km);
         setCosto(Math.round(1500 + parseFloat(km) * 350));
       }
@@ -222,13 +239,14 @@ function PanelEmisor({ usuario, envios, setEnvios }) {
       gananciaConductor: Math.round(costo * 0.8),
       comisionApp: Math.round(costo * 0.2),
       estado: "PENDIENTE",
-      conductor: null
+      conductor: null,
+      coordsChofer: null,
     };
     setEnvios([nuevo, ...envios]);
-    alert("¡Pedido creado en PiiTrack y procesado vía Mercado Pago!");
+    alert("¡Pedido registrado!");
   };
 
-  const misEnvios = envios.filter(e => e.emisor === usuario.email);
+  const misEnvios = envios.filter((e) => e.emisor === usuario.email);
 
   return (
     <div style={{ display: "flex", height: "100%" }}>
@@ -237,17 +255,21 @@ function PanelEmisor({ usuario, envios, setEnvios }) {
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <div>
             <label style={styles.label}>Barrio Origen</label>
-            <select value={origenKey} onChange={e => setOrigenKey(e.target.value)} style={styles.select}>
-              {Object.keys(BARRIOS_CORREDOR).map(k => (
-                <option key={k} value={k}>{k} ({BARRIOS_CORREDOR[k].zona})</option>
+            <select value={origenKey} onChange={(e) => setOrigenKey(e.target.value)} style={styles.select}>
+              {Object.keys(BARRIOS_CORREDOR).map((k) => (
+                <option key={k} value={k}>
+                  {k} ({BARRIOS_CORREDOR[k].zona})
+                </option>
               ))}
             </select>
           </div>
           <div>
             <label style={styles.label}>Barrio Destino</label>
-            <select value={destinoKey} onChange={e => setDestinoKey(e.target.value)} style={styles.select}>
-              {Object.keys(BARRIOS_CORREDOR).map(k => (
-                <option key={k} value={k}>{k} ({BARRIOS_CORREDOR[k].zona})</option>
+            <select value={destinoKey} onChange={(e) => setDestinoKey(e.target.value)} style={styles.select}>
+              {Object.keys(BARRIOS_CORREDOR).map((k) => (
+                <option key={k} value={k}>
+                  {k} ({BARRIOS_CORREDOR[k].zona})
+                </option>
               ))}
             </select>
           </div>
@@ -257,7 +279,7 @@ function PanelEmisor({ usuario, envios, setEnvios }) {
               type="text"
               placeholder="Ej. Llaves, Cartera, Documentos"
               value={paquete}
-              onChange={e => setPaquete(e.target.value)}
+              onChange={(e) => setPaquete(e.target.value)}
               style={styles.input}
             />
           </div>
@@ -267,7 +289,9 @@ function PanelEmisor({ usuario, envios, setEnvios }) {
 
           {distanciaKm && (
             <div style={styles.boxInfo}>
-              <p style={{ margin: "2px 0" }}>Distancia por Ruta: <b>{distanciaKm} km</b></p>
+              <p style={{ margin: "2px 0" }}>
+                Distancia por Ruta: <b>{distanciaKm} km</b>
+              </p>
               <p style={{ margin: "6px 0 0 0", fontSize: "16px", color: "#166534" }}>
                 Total: <b>${costo.toLocaleString()} ARS</b>
               </p>
@@ -278,12 +302,20 @@ function PanelEmisor({ usuario, envios, setEnvios }) {
           )}
         </div>
 
-        <h4 style={{ marginTop: "20px", color: "#0b192c" }}>Historial de Envíos</h4>
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px", overflowY: "auto", maxHeight: "180px" }}>
-          {misEnvios.map(e => (
+        <h4 style={{ marginTop: "20px", color: "#0b192c" }}>Mis Envíos y Códigos QR</h4>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px", overflowY: "auto", maxHeight: "250px" }}>
+          {misEnvios.map((e) => (
             <div key={e.id} style={styles.cardItem}>
               <b>{e.id}</b>: {e.origen} ➔ {e.destino}
-              <div style={{ fontSize: "12px", marginTop: "4px" }}>Estado: <span style={styles.badge}>{e.estado}</span></div>
+              <div style={{ fontSize: "12px", margin: "4px 0" }}>
+                Estado: <span style={styles.badge}>{e.estado}</span>
+              </div>
+              <div style={{ textAlign: "center", backgroundColor: "#f8fafc", padding: "10px", borderRadius: "6px", marginTop: "6px" }}>
+                <p style={{ fontSize: "11px", fontWeight: "bold", margin: "0 0 6px 0" }}>
+                  {e.estado === "PENDIENTE" ? "QR RETIRO (Mostrar al Chofer)" : "QR ENTREGA (Mostrar al Recibir)"}
+                </p>
+                <QRCodeSVG value={JSON.stringify({ id: e.id, accion: e.estado === "PENDIENTE" ? "RETIRO" : "ENTREGA" })} size={120} />
+              </div>
             </div>
           ))}
         </div>
@@ -292,14 +324,22 @@ function PanelEmisor({ usuario, envios, setEnvios }) {
       <div style={{ flex: 1 }}>
         <MapContainer center={[-35.0, -58.1]} zoom={10} style={{ width: "100%", height: "100%" }}>
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          
           <Marker position={[BARRIOS_CORREDOR[origenKey].lat, BARRIOS_CORREDOR[origenKey].lng]}>
             <Popup>Origen: {origenKey}</Popup>
           </Marker>
-
           <Marker position={[BARRIOS_CORREDOR[destinoKey].lat, BARRIOS_CORREDOR[destinoKey].lng]}>
             <Popup>Destino: {destinoKey}</Popup>
           </Marker>
+
+          {/* Si el chofer está en viaje, mostramos su posición GPS en tiempo real */}
+          {misEnvios.map(
+            (e) =>
+              e.coordsChofer && (
+                <Marker key={`chofer-${e.id}`} position={[e.coordsChofer.lat, e.coordsChofer.lng]}>
+                  <Popup>🚗 Conductor en Camino ({e.id})</Popup>
+                </Marker>
+              )
+          )}
 
           {rutaCoords.length > 0 && <Polyline positions={rutaCoords} color="#0b192c" weight={5} />}
           {rutaCoords.length > 0 && <RecentarMapa bounds={rutaCoords} />}
@@ -309,27 +349,66 @@ function PanelEmisor({ usuario, envios, setEnvios }) {
   );
 }
 
-// --- PANEL CONDUCTOR ---
+// --- PANEL CONDUCTOR CON ESCÁNER QR Y GPS EN VIVO ---
 function PanelConductor({ usuario, envios, setEnvios }) {
-  const pendientes = envios.filter(e => e.estado === "PENDIENTE");
-  const misTomados = envios.filter(e => e.conductor === usuario.email);
+  const [escanearParaId, setEscanearParaId] = useState(null);
+  const [accionEscaneo, setAccionEscaneo] = useState("");
+
+  const pendientes = envios.filter((e) => e.estado === "PENDIENTE");
+  const misTomados = envios.filter((e) => e.conductor === usuario.email);
 
   const totalGanado = misTomados
-    .filter(e => e.estado === "ENTREGADO")
+    .filter((e) => e.estado === "ENTREGADO")
     .reduce((acc, curr) => acc + curr.gananciaConductor, 0);
 
   const tomarEnvio = (id) => {
-    setEnvios(envios.map(e => e.id === id ? { ...e, estado: "EN_CAMINO", conductor: usuario.email } : e));
+    setEnvios(envios.map((e) => (e.id === id ? { ...e, conductor: usuario.email } : e)));
+    alert("Has asignado este envío. Ve al punto de origen y escanea el QR de retiro.");
   };
 
-  const marcarEntregado = (id) => {
-    setEnvios(envios.map(e => e.id === id ? { ...e, estado: "ENTREGADO" } : e));
+  // Tracking GPS Real
+  const activarGPS = (envioId) => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.watchPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          setEnvios((prev) =>
+            prev.map((e) => (e.id === envioId ? { ...e, coordsChofer: { lat, lng } } : e))
+          );
+        },
+        (err) => console.log("Error GPS", err),
+        { enableHighAccuracy: true }
+      );
+    }
+  };
+
+  const handleScanExitoso = (data) => {
+    if (data.id !== escanearParaId) {
+      alert("Este código QR no corresponde al envío seleccionado.");
+      return;
+    }
+
+    if (accionEscaneo === "RETIRO") {
+      setEnvios(
+        envios.map((e) => (e.id === data.id ? { ...e, estado: "EN_CAMINO" } : e))
+      );
+      activarGPS(data.id);
+      alert("¡QR de Retiro Validado! El paquete está EN CAMINO.");
+    } else if (accionEscaneo === "ENTREGADO") {
+      setEnvios(
+        envios.map((e) => (e.id === data.id ? { ...e, estado: "ENTREGADO" } : e))
+      );
+      alert("¡QR de Entrega Validado! Pago liberado a tu billetera.");
+    }
+
+    setEscanearParaId(null);
   };
 
   return (
     <div style={{ padding: "20px", overflowY: "auto", height: "100%", backgroundColor: "#f8fafc" }}>
       <h2 style={{ color: "#0b192c" }}>Panel del Conductor PiiTrack</h2>
-      
+
       <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
         <div style={styles.kpiCard}>
           <span style={styles.kpiTitle}>Saldo Acumulado en Billetera</span>
@@ -338,33 +417,71 @@ function PanelConductor({ usuario, envios, setEnvios }) {
         </div>
         <div style={styles.kpiCard}>
           <span style={styles.kpiTitle}>Envíos Completados</span>
-          <span style={styles.kpiValue}>{misTomados.filter(e => e.estado === "ENTREGADO").length}</span>
+          <span style={styles.kpiValue}>{misTomados.filter((e) => e.estado === "ENTREGADO").length}</span>
         </div>
       </div>
+
+      {escanearParaId && (
+        <div style={{ marginBottom: "20px" }}>
+          <EscanerQR onScanSuccess={handleScanExitoso} onCancel={() => setEscanearParaId(null)} />
+        </div>
+      )}
 
       <h3>Solicitudes Abiertas en el Corredor</h3>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "15px", marginBottom: "30px" }}>
         {pendientes.length === 0 && <p style={{ color: "#64748b" }}>No hay envíos pendientes en la ruta actualmente.</p>}
-        {pendientes.map(e => (
+        {pendientes.map((e) => (
           <div key={e.id} style={styles.cardItem}>
-            <h4>{e.origen} ➔ {e.destino}</h4>
-            <p style={{ fontSize: "13px" }}>Paquete: <b>{e.paquete}</b></p>
-            <p style={{ fontSize: "13px" }}>Distancia: <b>{e.distancia} km</b> por ruta</p>
-            <p style={{ color: "#166534", fontSize: "16px" }}>Ganancia Conductor (80%): <b>${e.gananciaConductor.toLocaleString()} ARS</b></p>
-            <button onClick={() => tomarEnvio(e.id)} style={styles.primaryButton}>Tomar Solicitud</button>
+            <h4>
+              {e.origen} ➔ {e.destino}
+            </h4>
+            <p style={{ fontSize: "13px" }}>
+              Paquete: <b>{e.paquete}</b>
+            </p>
+            <p style={{ color: "#166534", fontSize: "16px" }}>
+              Ganancia: <b>${e.gananciaConductor.toLocaleString()} ARS</b>
+            </p>
+            {!e.conductor && (
+              <button onClick={() => tomarEnvio(e.id)} style={styles.primaryButton}>
+                Tomar Solicitud
+              </button>
+            )}
           </div>
         ))}
       </div>
 
-      <h3>Mis Viajes Activos</h3>
+      <h3>Mis Viajes Asignados</h3>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "15px" }}>
-        {misTomados.map(e => (
+        {misTomados.map((e) => (
           <div key={e.id} style={{ ...styles.cardItem, borderLeft: "4px solid #0b192c" }}>
-            <h4>{e.id}: {e.origen} ➔ {e.destino}</h4>
-            <p>Estado actual: <b>{e.estado}</b></p>
+            <h4>
+              {e.id}: {e.origen} ➔ {e.destino}
+            </h4>
+            <p>
+              Estado actual: <b>{e.estado}</b>
+            </p>
+
+            {e.estado === "PENDIENTE" && (
+              <button
+                onClick={() => {
+                  setEscanearParaId(e.id);
+                  setAccionEscaneo("RETIRO");
+                }}
+                style={{ ...styles.primaryButton, backgroundColor: "#0284c7" }}
+              >
+                📷 Escanear QR de Retiro
+              </button>
+            )}
+
             {e.estado === "EN_CAMINO" && (
-              <button onClick={() => marcarEntregado(e.id)} style={{ ...styles.primaryButton, backgroundColor: "#16a34a" }}>
-                ✓ Marcar como Entregado
+              <button
+                onClick={() => {
+                  setEscanearParaId(e.id);
+                  setAccionEscaneo("ENTREGADO");
+                }}
+                style={{ ...styles.primaryButton, backgroundColor: "#16a34a" }}
+              >
+                📷 Escanear QR de Entrega
               </button>
             )}
           </div>
@@ -418,15 +535,23 @@ function PanelAdmin({ envios }) {
             </tr>
           </thead>
           <tbody>
-            {envios.map(e => (
+            {envios.map((e) => (
               <tr key={e.id} style={{ borderBottom: "1px solid #e2e8f0" }}>
-                <td style={{ padding: "10px" }}><b>{e.id}</b></td>
+                <td style={{ padding: "10px" }}>
+                  <b>{e.id}</b>
+                </td>
                 <td>{e.emisor}</td>
-                <td>{e.origen} ➔ {e.destino}</td>
+                <td>
+                  {e.origen} ➔ {e.destino}
+                </td>
                 <td>${e.montoTotal.toLocaleString()}</td>
                 <td style={{ color: "#166534" }}>${e.gananciaConductor.toLocaleString()}</td>
-                <td style={{ color: "#0b192c" }}><b>${e.comisionApp.toLocaleString()}</b></td>
-                <td><span style={styles.badge}>{e.estado}</span></td>
+                <td style={{ color: "#0b192c" }}>
+                  <b>${e.comisionApp.toLocaleString()}</b>
+                </td>
+                <td>
+                  <span style={styles.badge}>{e.estado}</span>
+                </td>
               </tr>
             ))}
           </tbody>
