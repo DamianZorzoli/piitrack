@@ -20,34 +20,33 @@ L.Marker.prototype.options.icon = DefaultIcon;
 // --- BASE DE DATOS DE BARRIOS CORREDOR (COORDENADAS EXACTAS AJUSTADAS) ---
 const BARRIOS_CORREDOR = {
   // --- ZONA HUDSON & EL PATO ---
-  "Fincas de Hudson": { lat: -34.8021, lng: -58.1582, zona: "Hudson" },
-  "Fincas del Sur": { lat: -34.8115, lng: -58.1634, zona: "Hudson" },
-  "Abril Club de Campo": { lat: -34.8234, lng: -58.1712, zona: "Hudson" },
-  "El Carmen Country Club": { lat: -34.8312, lng: -58.1821, zona: "Hudson" },
-  "Barrio Los Profesionales": { lat: -34.8156, lng: -58.1498, zona: "Hudson" },
-  "El Pato Country Club": { lat: -34.8621, lng: -58.1890, zona: "El Pato" },
-  "Las Acacias (El Pato)": { lat: -34.8712, lng: -58.1950, zona: "El Pato" },
+  "Fincas de Hudson": { lat: -34.8015, lng: -58.1565, zona: "Hudson" }, // Entrada principal sobre Calle 137
+  "Fincas del Sur": { lat: -34.8078, lng: -58.1578, zona: "Hudson" }, // Acceso Guardia
+  "Abril Club de Campo": { lat: -34.8190, lng: -58.1691, zona: "Hudson" }, // Acceso Principal Au. BS AS - La Plata Km 33.5
+  "El Carmen Country Club": { lat: -34.8322, lng: -58.1818, zona: "Hudson" }, // Guardia de acceso sobre Camino El Carmen
+  "Barrio Los Profesionales": { lat: -34.8085, lng: -58.1492, zona: "Hudson" }, // Acceso Calle 140 / Calle 53
+  "El Pato Country Club": { lat: -34.8623, lng: -58.1895, zona: "El Pato" }, // Acceso Calle 629
+  "Las Acacias (El Pato)": { lat: -34.8715, lng: -58.1962, zona: "El Pato" }, // Entrada Calle 635 / Colectora
 
-  // --- ZONA AUTOVÍA RUTA 2 (KM 64 AL 75) ---
-  "La Cándida Club de Campo": { lat: -35.0350, lng: -58.1020, zona: "Ruta 2 Km 47" },
-  "Area 60 (La Victoria / Real)": { lat: -35.0921, lng: -58.0750, zona: "Ruta 2 Km 64" },
-  "Miralagos Club de Campo": { lat: -35.0980, lng: -58.0680, zona: "Ruta 2 Km 65" },
-  "Campos de Roca I": { lat: -35.1010, lng: -58.0630, zona: "Ruta 2 Km 65" },
-  "Campos de Roca II": { lat: -35.1050, lng: -58.0580, zona: "Ruta 2 Km 65" },
-  "Haras del Sur I": { lat: -35.1235, lng: -58.0380, zona: "Ruta 2 Km 69" },
-  "Haras del Sur II": { lat: -35.1360, lng: -58.0220, zona: "Ruta 2 Km 71" },
-  "Haras del Sur III": { lat: -35.1480, lng: -58.0080, zona: "Ruta 2 Km 73" },
-  "Haras del Sur IV / Combo": { lat: -35.1600, lng: -57.9920, zona: "Ruta 2 Km 75" },
-  "Posada del Sol": { lat: -35.1120, lng: -58.0510, zona: "Ruta 2" },
+  // --- ZONA AUTOVÍA RUTA 2 (KM 47 AL 75) ---
+  "La Cándida Club de Campo": { lat: -34.9602, lng: -58.1398, zona: "Ruta 2 Km 47" }, // Acceso Guardia en RP 2 Km 46.5 / 47
+  "Area 60 (La Victoria / Real)": { lat: -35.0788, lng: -58.0781, zona: "Ruta 2 Km 64" }, // Portal de ingreso RP 2 Km 64
+  "Miralagos Club de Campo": { lat: -35.0883, lng: -58.0705, zona: "Ruta 2 Km 65" }, // Entrada / Guardia en RP 2 Km 65
+  "Campos de Roca I": { lat: -35.0933, lng: -58.0658, zona: "Ruta 2 Km 65" }, // Acceso principal por RP 2 Km 65
+  "Campos de Roca II": { lat: -35.0991, lng: -58.0601, zona: "Ruta 2 Km 65" }, // Entrada principal por RP 2
+  "Haras del Sur I": { lat: -35.1231, lng: -58.0569, zona: "Ruta 2 Km 69" }, // Acceso Guardia en RP 2 Km 69
+  "Haras del Sur II": { lat: -35.1388, lng: -58.0264, zona: "Ruta 2 Km 73" }, // Entrada Principal en RP 2 Km 73
+  "Haras del Sur III": { lat: -35.1235, lng: -58.0465, zona: "Ruta 2 Km 70" }, // Entrada Guardia RP 2 Km 70
+  "Haras del Sur IV / Combo": { lat: -35.1310, lng: -58.0372, zona: "Ruta 2 Km 70" }, // Entrada Haras IV / V
+  "Posada del Sol": { lat: -35.0485, lng: -58.1215, zona: "Ruta 2 Km 53" }, // Entrada Barrio Posada del Sol (Ruta 2 Km 53)
 
   // --- ZONA BRANDSEN ---
-  "Altos de Brandsen": { lat: -35.1620, lng: -58.2210, zona: "Brandsen" },
-  "Las Mandarinas": { lat: -35.1712, lng: -58.2280, zona: "Brandsen" },
-  "Barrio Obligado": { lat: -35.1650, lng: -58.2410, zona: "Brandsen" },
-  "Campos de Brandsen": { lat: -35.1820, lng: -58.2530, zona: "Brandsen" },
-  "El Sostén (Brandsen)": { lat: -35.1410, lng: -58.1980, zona: "Brandsen" },
+  "Altos de Brandsen": { lat: -35.1610, lng: -58.2243, zona: "Brandsen" }, // Acceso sobre calle Los Indios
+  "Las Mandarinas": { lat: -35.1702, lng: -58.2295, zona: "Brandsen" }, // Entrada Barrio / C. Las Mandarinas
+  "Barrio Obligado": { lat: -35.1638, lng: -58.2415, zona: "Brandsen" }, // Entrada por Av. San Martín / Obligado
+  "Campos de Brandsen": { lat: -35.1795, lng: -58.2581, zona: "Brandsen" }, // Entrada sobre RP 215 Km 38.5
+  "El Sostén (Brandsen)": { lat: -35.1415, lng: -58.1990, zona: "Brandsen" }, // Acceso RP 215
 };
-
 
 function RecentarMapa({ bounds }) {
   const map = useMap();
