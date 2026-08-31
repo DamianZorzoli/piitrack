@@ -4,10 +4,9 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { QRCodeSVG } from "qrcode.react";
 import { Html5QrcodeScanner } from "html5-qrcode";
+import { supabase } from "./supabaseClient";
 
-// Importación del Logo Oficial PiiTrack
 import logoImg from "./assets/logo-piitrack.png";
-
 import markerIconPng from "leaflet/dist/images/marker-icon.png";
 import markerShadowPng from "leaflet/dist/images/marker-shadow.png";
 
@@ -19,7 +18,6 @@ const DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// --- BASE DE DATOS DE BARRIOS CORREDOR HUDSON / RUTA 2 / BRANDSEN ---
 const BARRIOS_CORREDOR = {
   "Fincas de Hudson": { lat: -34.8021, lng: -58.1582, zona: "Hudson" },
   "Fincas del Sur": { lat: -34.8115, lng: -58.1634, zona: "Hudson" },
@@ -51,7 +49,6 @@ function RecentarMapa({ bounds }) {
   return null;
 }
 
-// --- COMPONENTE ESCÁNER DE QR ---
 function EscanerQR({ onScanSuccess, onCancel }) {
   useEffect(() => {
     const scanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: 250 }, false);
@@ -88,23 +85,29 @@ export default function AppPiiTrack() {
   const [emailInput, setEmailInput] = useState("");
   const [passInput, setPassInput] = useState("");
   const [roleInput, setRoleInput] = useState("emisor");
+  const [envios, setEnvios] = useState([]);
 
-  const [envios, setEnvios] = useState([
-    {
-      id: "PII-901",
-      emisor: "vecino@fincashudson.com",
-      origen: "Fincas de Hudson",
-      destino: "Haras del Sur I",
-      paquete: "Documentos legales",
-      distancia: "28.4",
-      montoTotal: 11440,
-      gananciaConductor: 9152,
-      comisionApp: 2288,
-      estado: "PENDIENTE",
-      conductor: null,
-      coordsChofer: null,
-    },
-  ]);
+  // --- CARGA INICIAL Y SUBSCRIPCIÓN REALTIME DESDE SUPABASE ---
+  useEffect(() => {
+    const fetchEnvios = async () => {
+      const { data, error } = await supabase.from("envios").select("*").order("created_at", { ascending: false });
+      if (!error && data) setEnvios(data);
+    };
+
+    fetchEnvios();
+
+    // Suscripción en tiempo real a cambios en la base de datos
+    const channel = supabase
+      .channel("schema-db-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "envios" }, () => {
+        fetchEnvios();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -122,7 +125,6 @@ export default function AppPiiTrack() {
     return (
       <div style={styles.loginContainer}>
         <div style={styles.loginCard}>
-          {/* Muestra del Logo en Login */}
           <div style={{ textAlign: "center", marginBottom: "15px" }}>
             <img src={logoImg} alt="PiiTrack Logo" style={{ width: "180px", height: "auto" }} />
           </div>
@@ -172,7 +174,6 @@ export default function AppPiiTrack() {
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "sans-serif" }}>
       <header style={styles.header}>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          {/* Muestra del Logo en la cabecera */}
           <img src={logoImg} alt="PiiTrack Logo" style={{ height: "35px", width: "auto" }} />
           <span style={{ fontSize: "12px", color: "#64748b" }}>| Corredor Hudson - Ruta 2 - Brandsen</span>
         </div>
@@ -187,8 +188,8 @@ export default function AppPiiTrack() {
       </header>
 
       <div style={{ flex: 1, overflow: "hidden" }}>
-        {usuario.role === "emisor" && <PanelEmisor usuario={usuario} envios={envios} setEnvios={setEnvios} />}
-        {usuario.role === "conductor" && <PanelConductor usuario={usuario} envios={envios} setEnvios={setEnvios} />}
+        {usuario.role === "emisor" && <PanelEmisor usuario={usuario} envios={envios} />}
+        {usuario.role === "conductor" && <PanelConductor usuario={usuario} envios={envios} />}
         {usuario.role === "admin" && <PanelAdmin envios={envios} />}
       </div>
     </div>
@@ -196,7 +197,7 @@ export default function AppPiiTrack() {
 }
 
 // --- PANEL EMISOR ---
-function PanelEmisor({ usuario, envios, setEnvios }) {
+function PanelEmisor({ usuario, envios }) {
   const [origenKey, setOrigenKey] = useState("Fincas de Hudson");
   const [destinoKey, setDestinoKey] = useState("Haras del Sur I");
   const [paquete, setPaquete] = useState("");
@@ -229,23 +230,28 @@ function PanelEmisor({ usuario, envios, setEnvios }) {
     }
   };
 
-  const crearPedido = () => {
+  const crearPedido = async () => {
     const nuevo = {
       id: `PII-${Math.floor(100 + Math.random() * 900)}`,
       emisor: usuario.email,
       origen: origenKey,
       destino: destinoKey,
       paquete: paquete || "Paquete Estándar",
-      distancia: distanciaKm,
-      montoTotal: costo,
-      gananciaConductor: Math.round(costo * 0.8),
-      comisionApp: Math.round(costo * 0.2),
+      distancia: parseFloat(distanciaKm),
+      monto_total: costo,
+      ganancia_conductor: Math.round(costo * 0.8),
+      comision_app: Math.round(costo * 0.2),
       estado: "PENDIENTE",
-      conductor: null,
-      coordsChofer: null,
     };
-    setEnvios([nuevo, ...envios]);
-    alert("¡Pedido registrado!");
+
+    const { error } = await supabase.from("envios").insert([nuevo]);
+
+    if (error) {
+      alert("Error guardando el pedido en Supabase.");
+    } else {
+      alert("¡Pedido registrado exitosamente en tiempo real!");
+      setPaquete("");
+    }
   };
 
   const misEnvios = envios.filter((e) => e.emisor === usuario.email);
@@ -298,7 +304,7 @@ function PanelEmisor({ usuario, envios, setEnvios }) {
                 Total: <b>${costo.toLocaleString()} ARS</b>
               </p>
               <button onClick={crearPedido} style={{ ...styles.primaryButton, backgroundColor: "#009ee3" }}>
-                💳 Pagar con Mercado Pago
+                💳 Confirmar y Pagar
               </button>
             </div>
           )}
@@ -335,8 +341,9 @@ function PanelEmisor({ usuario, envios, setEnvios }) {
 
           {misEnvios.map(
             (e) =>
-              e.coordsChofer && (
-                <Marker key={`chofer-${e.id}`} position={[e.coordsChofer.lat, e.coordsChofer.lng]}>
+              e.lat_chofer &&
+              e.lng_chofer && (
+                <Marker key={`chofer-${e.id}`} position={[e.lat_chofer, e.lng_chofer]}>
                   <Popup>🚗 Conductor en Camino ({e.id})</Popup>
                 </Marker>
               )
@@ -351,7 +358,7 @@ function PanelEmisor({ usuario, envios, setEnvios }) {
 }
 
 // --- PANEL CONDUCTOR ---
-function PanelConductor({ usuario, envios, setEnvios }) {
+function PanelConductor({ usuario, envios }) {
   const [escanearParaId, setEscanearParaId] = useState(null);
   const [accionEscaneo, setAccionEscaneo] = useState("");
 
@@ -360,22 +367,21 @@ function PanelConductor({ usuario, envios, setEnvios }) {
 
   const totalGanado = misTomados
     .filter((e) => e.estado === "ENTREGADO")
-    .reduce((acc, curr) => acc + curr.gananciaConductor, 0);
+    .reduce((acc, curr) => acc + (curr.ganancia_conductor || 0), 0);
 
-  const tomarEnvio = (id) => {
-    setEnvios(envios.map((e) => (e.id === id ? { ...e, conductor: usuario.email } : e)));
-    alert("Has asignado este envío. Ve al punto de origen y escanea el QR de retiro.");
+  const tomarEnvio = async (id) => {
+    await supabase.from("envios").update({ conductor: usuario.email }).eq("id", id);
+    alert("Envío asignado. Dirígete al origen para escanear el QR.");
   };
 
   const activarGPS = (envioId) => {
     if ("geolocation" in navigator) {
       navigator.geolocation.watchPosition(
-        (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          setEnvios((prev) =>
-            prev.map((e) => (e.id === envioId ? { ...e, coordsChofer: { lat, lng } } : e))
-          );
+        async (pos) => {
+          await supabase
+            .from("envios")
+            .update({ lat_chofer: pos.coords.latitude, lng_chofer: pos.coords.longitude })
+            .eq("id", envioId);
         },
         (err) => console.log("Error GPS", err),
         { enableHighAccuracy: true }
@@ -383,19 +389,19 @@ function PanelConductor({ usuario, envios, setEnvios }) {
     }
   };
 
-  const handleScanExitoso = (data) => {
+  const handleScanExitoso = async (data) => {
     if (data.id !== escanearParaId) {
       alert("Este código QR no corresponde al envío seleccionado.");
       return;
     }
 
     if (accionEscaneo === "RETIRO") {
-      setEnvios(envios.map((e) => (e.id === data.id ? { ...e, estado: "EN_CAMINO" } : e)));
+      await supabase.from("envios").update({ estado: "EN_CAMINO" }).eq("id", data.id);
       activarGPS(data.id);
-      alert("¡QR de Retiro Validado! El paquete está EN CAMINO.");
+      alert("¡QR de Retiro Validado! Paquete EN CAMINO.");
     } else if (accionEscaneo === "ENTREGADO") {
-      setEnvios(envios.map((e) => (e.id === data.id ? { ...e, estado: "ENTREGADO" } : e)));
-      alert("¡QR de Entrega Validado! Pago liberado a tu billetera.");
+      await supabase.from("envios").update({ estado: "ENTREGADO" }).eq("id", data.id);
+      alert("¡QR de Entrega Validado! Pago disponible en tu saldo.");
     }
 
     setEscanearParaId(null);
@@ -425,7 +431,7 @@ function PanelConductor({ usuario, envios, setEnvios }) {
 
       <h3>Solicitudes Abiertas en el Corredor</h3>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "15px", marginBottom: "30px" }}>
-        {pendientes.length === 0 && <p style={{ color: "#64748b" }}>No hay envíos pendientes en la ruta actualmente.</p>}
+        {pendientes.length === 0 && <p style={{ color: "#64748b" }}>No hay envíos pendientes actualmente.</p>}
         {pendientes.map((e) => (
           <div key={e.id} style={styles.cardItem}>
             <h4>
@@ -435,7 +441,7 @@ function PanelConductor({ usuario, envios, setEnvios }) {
               Paquete: <b>{e.paquete}</b>
             </p>
             <p style={{ color: "#166534", fontSize: "16px" }}>
-              Ganancia: <b>${e.gananciaConductor.toLocaleString()} ARS</b>
+              Ganancia: <b>${e.ganancia_conductor?.toLocaleString()} ARS</b>
             </p>
             {!e.conductor && (
               <button onClick={() => tomarEnvio(e.id)} style={styles.primaryButton}>
@@ -489,9 +495,9 @@ function PanelConductor({ usuario, envios, setEnvios }) {
 
 // --- PANEL ADMIN ---
 function PanelAdmin({ envios }) {
-  const gmvTotal = envios.reduce((acc, curr) => acc + curr.montoTotal, 0);
-  const comisionesTotales = envios.reduce((acc, curr) => acc + curr.comisionApp, 0);
-  const pagosAConductores = envios.reduce((acc, curr) => acc + curr.gananciaConductor, 0);
+  const gmvTotal = envios.reduce((acc, curr) => acc + (curr.monto_total || 0), 0);
+  const comisionesTotales = envios.reduce((acc, curr) => acc + (curr.comision_app || 0), 0);
+  const pagosAConductores = envios.reduce((acc, curr) => acc + (curr.ganancia_conductor || 0), 0);
 
   return (
     <div style={{ padding: "24px", overflowY: "auto", height: "100%", backgroundColor: "#f1f5f9" }}>
@@ -540,10 +546,10 @@ function PanelAdmin({ envios }) {
                 <td>
                   {e.origen} ➔ {e.destino}
                 </td>
-                <td>${e.montoTotal.toLocaleString()}</td>
-                <td style={{ color: "#166534" }}>${e.gananciaConductor.toLocaleString()}</td>
+                <td>${e.monto_total?.toLocaleString()}</td>
+                <td style={{ color: "#166534" }}>${e.ganancia_conductor?.toLocaleString()}</td>
                 <td style={{ color: "#0b192c" }}>
-                  <b>${e.comisionApp.toLocaleString()}</b>
+                  <b>${e.comision_app?.toLocaleString()}</b>
                 </td>
                 <td>
                   <span style={styles.badge}>{e.estado}</span>
@@ -557,7 +563,6 @@ function PanelAdmin({ envios }) {
   );
 }
 
-// --- ESTILOS INLINE BRANDING PIITRACK ---
 const styles = {
   loginContainer: { display: "flex", justifyContent: "center", alignItems: "center", width: "100vw", height: "100vh", backgroundColor: "#0b192c" },
   loginCard: { width: "380px", padding: "32px", backgroundColor: "#ffffff", borderRadius: "12px", boxShadow: "0 20px 40px rgba(0,0,0,0.3)" },
