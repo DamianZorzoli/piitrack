@@ -35,7 +35,7 @@ const BARRIOS_CORREDOR = {
   "Campos de Roca I": { lat: -35.0933, lng: -58.0658, zona: "Ruta 2 Km 65" }, // Acceso principal por RP 2 Km 65
   "Campos de Roca II": { lat: -35.0991, lng: -58.0601, zona: "Ruta 2 Km 65" }, // Entrada principal por RP 2
   "Haras del Sur I": { lat: -35.1231, lng: -58.0569, zona: "Ruta 2 Km 69" }, // Acceso Guardia en RP 2 Km 69
-  "Haras del Sur II": { lat: -35.1388, lng: -58.0264, zona: "Ruta 2 Km 73" }, // Entrada Principal en RP 2 Km 73
+  "Haras del Sur II": { lat: -35.1588, lng: -58.0464, zona: "Ruta 2 Km 73" }, // Entrada Principal en RP 2 Km 73
   "Haras del Sur III": { lat: -35.1235, lng: -58.0465, zona: "Ruta 2 Km 70" }, // Entrada Guardia RP 2 Km 70
   "Haras del Sur IV / Combo": { lat: -35.1310, lng: -58.0372, zona: "Ruta 2 Km 70" }, // Entrada Haras IV / V
   "Posada del Sol": { lat: -35.0485, lng: -58.1215, zona: "Ruta 2 Km 53" }, // Entrada Barrio Posada del Sol (Ruta 2 Km 53)
