@@ -5,6 +5,9 @@ import "leaflet/dist/leaflet.css";
 import { QRCodeSVG } from "qrcode.react";
 import { Html5QrcodeScanner } from "html5-qrcode";
 
+// Importación del Logo Oficial PiiTrack
+import logoImg from "./assets/logo-piitrack.png";
+
 import markerIconPng from "leaflet/dist/images/marker-icon.png";
 import markerShadowPng from "leaflet/dist/images/marker-shadow.png";
 
@@ -119,9 +122,9 @@ export default function AppPiiTrack() {
     return (
       <div style={styles.loginContainer}>
         <div style={styles.loginCard}>
-          <div style={styles.logoBadge}>
-            <span style={{ fontSize: "28px" }}>⭕</span>
-            <h1 style={styles.logoTitle}>Pii track</h1>
+          {/* Muestra del Logo en Login */}
+          <div style={{ textAlign: "center", marginBottom: "15px" }}>
+            <img src={logoImg} alt="PiiTrack Logo" style={{ width: "180px", height: "auto" }} />
           </div>
           <p style={styles.logoSubtitle}>Logística colaborativa · Corredor Ruta 2 / Hudson / Brandsen</p>
 
@@ -168,10 +171,9 @@ export default function AppPiiTrack() {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "sans-serif" }}>
       <header style={styles.header}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={{ backgroundColor: "#0b192c", padding: "4px 10px", borderRadius: "6px", color: "white", fontWeight: "bold" }}>
-            Pii track
-          </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          {/* Muestra del Logo en la cabecera */}
+          <img src={logoImg} alt="PiiTrack Logo" style={{ height: "35px", width: "auto" }} />
           <span style={{ fontSize: "12px", color: "#64748b" }}>| Corredor Hudson - Ruta 2 - Brandsen</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
@@ -193,7 +195,7 @@ export default function AppPiiTrack() {
   );
 }
 
-// --- PANEL EMISOR CON QR Y MAPA DE TRACKING EN VIVO ---
+// --- PANEL EMISOR ---
 function PanelEmisor({ usuario, envios, setEnvios }) {
   const [origenKey, setOrigenKey] = useState("Fincas de Hudson");
   const [destinoKey, setDestinoKey] = useState("Haras del Sur I");
@@ -331,7 +333,6 @@ function PanelEmisor({ usuario, envios, setEnvios }) {
             <Popup>Destino: {destinoKey}</Popup>
           </Marker>
 
-          {/* Si el chofer está en viaje, mostramos su posición GPS en tiempo real */}
           {misEnvios.map(
             (e) =>
               e.coordsChofer && (
@@ -349,7 +350,7 @@ function PanelEmisor({ usuario, envios, setEnvios }) {
   );
 }
 
-// --- PANEL CONDUCTOR CON ESCÁNER QR Y GPS EN VIVO ---
+// --- PANEL CONDUCTOR ---
 function PanelConductor({ usuario, envios, setEnvios }) {
   const [escanearParaId, setEscanearParaId] = useState(null);
   const [accionEscaneo, setAccionEscaneo] = useState("");
@@ -366,7 +367,6 @@ function PanelConductor({ usuario, envios, setEnvios }) {
     alert("Has asignado este envío. Ve al punto de origen y escanea el QR de retiro.");
   };
 
-  // Tracking GPS Real
   const activarGPS = (envioId) => {
     if ("geolocation" in navigator) {
       navigator.geolocation.watchPosition(
@@ -390,15 +390,11 @@ function PanelConductor({ usuario, envios, setEnvios }) {
     }
 
     if (accionEscaneo === "RETIRO") {
-      setEnvios(
-        envios.map((e) => (e.id === data.id ? { ...e, estado: "EN_CAMINO" } : e))
-      );
+      setEnvios(envios.map((e) => (e.id === data.id ? { ...e, estado: "EN_CAMINO" } : e)));
       activarGPS(data.id);
       alert("¡QR de Retiro Validado! El paquete está EN CAMINO.");
     } else if (accionEscaneo === "ENTREGADO") {
-      setEnvios(
-        envios.map((e) => (e.id === data.id ? { ...e, estado: "ENTREGADO" } : e))
-      );
+      setEnvios(envios.map((e) => (e.id === data.id ? { ...e, estado: "ENTREGADO" } : e)));
       alert("¡QR de Entrega Validado! Pago liberado a tu billetera.");
     }
 
@@ -565,10 +561,8 @@ function PanelAdmin({ envios }) {
 const styles = {
   loginContainer: { display: "flex", justifyContent: "center", alignItems: "center", width: "100vw", height: "100vh", backgroundColor: "#0b192c" },
   loginCard: { width: "380px", padding: "32px", backgroundColor: "#ffffff", borderRadius: "12px", boxShadow: "0 20px 40px rgba(0,0,0,0.3)" },
-  logoBadge: { display: "flex", alignItems: "center", gap: "8px" },
-  logoTitle: { color: "#0b192c", margin: 0, fontSize: "28px", fontWeight: "bold", letterSpacing: "-0.5px" },
-  logoSubtitle: { color: "#64748b", fontSize: "12px", marginBottom: "20px" },
-  header: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 24px", backgroundColor: "#ffffff", borderBottom: "1px solid #e2e8f0" },
+  logoSubtitle: { color: "#64748b", fontSize: "12px", textAlign: "center", marginBottom: "20px" },
+  header: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 24px", backgroundColor: "#ffffff", borderBottom: "1px solid #e2e8f0" },
   userBadge: { fontSize: "13px", color: "#475569" },
   logoutBtn: { padding: "6px 12px", border: "1px solid #cbd5e1", borderRadius: "6px", backgroundColor: "#fff", cursor: "pointer", fontSize: "12px" },
   sidebar: { width: "380px", padding: "20px", backgroundColor: "#fff", borderRight: "1px solid #e2e8f0", zIndex: 1000 },
